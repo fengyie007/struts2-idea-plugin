@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.intellij"
-version = "2023.2"
+version = "2023.2.3"
 
 repositories {
     mavenCentral()
@@ -16,7 +16,7 @@ java.sourceSets["main"].java {
 }
 
 intellij {
-    version.set("2023.1.1")
+    version.set("2023.2.3")
     type.set("IU") // Target IDE Platform
 
     plugins.set(listOf(
@@ -43,7 +43,7 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set("231")
-        untilBuild.set("232.*")
+        untilBuild.set("233.*")
     }
 
     signPlugin {
@@ -55,4 +55,9 @@ tasks {
     publishPlugin {
         token.set(System.getenv("PUBLISH_TOKEN"))
     }
+}
+
+// https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin-faq.html#how-to-disable-building-searchable-options
+tasks.buildSearchableOptions {
+    enabled = false
 }
