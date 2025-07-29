@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 The authors
+ * Copyright 2025 The authors
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -41,11 +41,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Custom tags attribute "action".
+ * Provides reference resolution for HTML form action attribute that can work with separate namespace attribute.
+ * Supports form tags like: &lt;form name="fm" action="processCodeInputContinue.do" namespace="/common"&gt;
  *
- * @author Yann C&eacute;bron
+ * @author Enhanced for namespace/action separation support
  */
-public class ActionReferenceProvider extends PsiReferenceProvider {
+public class HtmlFormActionReferenceProvider extends PsiReferenceProvider {
 
   @Override
   public PsiReference @NotNull [] getReferencesByElement(@NotNull final PsiElement psiElement,
@@ -61,47 +62,58 @@ public class ActionReferenceProvider extends PsiReferenceProvider {
 
     // resolve to <action>
     final String actionName = TaglibUtil.trimActionPath(path);
-    final String namespace = getNamespace(xmlAttributeValue);
+    final String namespace = getNamespaceFromFormTag(xmlAttributeValue);
     final List<Action> actions = strutsModel.findActionsByName(actionName, namespace);
     final Action action = actions.isEmpty() ? null : actions.get(0);
 
     final int bangIndex = path.indexOf(TaglibUtil.BANG_SYMBOL);
     if (bangIndex == -1) {
-      return new PsiReference[]{new ActionReference(xmlAttributeValue, action, namespace, strutsModel)};
+      return new PsiReference[]{new HtmlFormActionReference(xmlAttributeValue, action, namespace, strutsModel)};
     }
 
-    return new PsiReference[]{new ActionReference(xmlAttributeValue, action, namespace, strutsModel),
+    return new PsiReference[]{new HtmlFormActionReference(xmlAttributeValue, action, namespace, strutsModel),
                               new ActionMethodReference(xmlAttributeValue, action, bangIndex)};
   }
 
+  /**
+   * Gets namespace from the form tag or its parent tags.
+   * This method specifically looks for namespace attribute in HTML form tags.
+   */
   @Nullable
-  private static String getNamespace(@NotNull final XmlAttributeValue xmlAttributeValue) {
+  private static String getNamespaceFromFormTag(@NotNull final XmlAttributeValue xmlAttributeValue) {
     final XmlTag tag = PsiTreeUtil.getParentOfType(xmlAttributeValue, XmlTag.class);
     if (tag == null) {
       return null;
     }
 
-    // First try to get namespace from same tag
+    // Check current tag for namespace attribute
     String namespace = tag.getAttributeValue("namespace");
-    
-    // If namespace not found and this is an action attribute, check for separate namespace attribute
+    if (namespace != null) {
+      return namespace;
+    }
+
+    // If this is an action attribute in a form tag, look for namespace in the same tag
     final String attributeName = xmlAttributeValue.getParent() instanceof com.intellij.psi.xml.XmlAttribute ? 
         ((com.intellij.psi.xml.XmlAttribute) xmlAttributeValue.getParent()).getName() : null;
-    if (namespace == null && "action".equals(attributeName)) {
-      // Look for namespace attribute in the same form tag
+    if ("action".equals(attributeName) && "form".equals(tag.getLocalName())) {
       namespace = tag.getAttributeValue("namespace");
-      
-      // If still not found, check if this is within another tag that might have namespace
-      XmlTag parentTag = tag.getParentTag();
-      while (parentTag != null && namespace == null) {
-        namespace = parentTag.getAttributeValue("namespace");
-        parentTag = parentTag.getParentTag();
+      if (namespace != null) {
+        return namespace;
       }
     }
-    
-    return namespace;
-  }
 
+    // Look up the parent hierarchy for namespace
+    XmlTag parentTag = tag.getParentTag();
+    while (parentTag != null) {
+      namespace = parentTag.getAttributeValue("namespace");
+      if (namespace != null) {
+        return namespace;
+      }
+      parentTag = parentTag.getParentTag();
+    }
+
+    return null;
+  }
 
   private static final class ActionMethodReference extends PsiReferenceBase<XmlAttributeValue> implements EmptyResolveMessageProvider {
 
@@ -143,17 +155,16 @@ public class ActionReferenceProvider extends PsiReferenceProvider {
     }
   }
 
-
-  public static final class ActionReference extends PsiReferenceBase<XmlAttributeValue> implements EmptyResolveMessageProvider {
+  private static final class HtmlFormActionReference extends PsiReferenceBase<XmlAttributeValue> implements EmptyResolveMessageProvider {
 
     private final Action action;
     private final String namespace;
     private final StrutsModel strutsModel;
 
-    private ActionReference(final XmlAttributeValue xmlAttributeValue,
-                            @Nullable final Action action,
-                            @Nullable @NonNls final String namespace,
-                            final StrutsModel strutsModel) {
+    private HtmlFormActionReference(final XmlAttributeValue xmlAttributeValue,
+                                    @Nullable final Action action,
+                                    @Nullable @NonNls final String namespace,
+                                    final StrutsModel strutsModel) {
       super(xmlAttributeValue);
       this.action = action;
       this.namespace = namespace;
@@ -194,7 +205,5 @@ public class ActionReferenceProvider extends PsiReferenceProvider {
     public String getUnresolvedMessagePattern() {
       return "Cannot resolve action '" + getValue() + "'";
     }
-
   }
-
 }

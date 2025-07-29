@@ -1,38 +1,65 @@
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "1.8.21"
-    id("org.jetbrains.intellij") version "1.13.3"
+    id("org.jetbrains.intellij.platform") version "2.7.0"
+    id("org.jetbrains.kotlin.jvm") version "1.9.23"
 }
 
 group = "com.intellij"
-version = "2023.2.3"
+version = "2025.1.3"
 
 repositories {
     mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
 java.sourceSets["main"].java {
     srcDir("src/main/gen")
 }
 
-intellij {
-    version.set("2023.2.3")
-    type.set("IU") // Target IDE Platform
+dependencies {
+    intellijPlatform {
+        intellijIdeaUltimate("2025.1.3")
 
-    plugins.set(listOf(
-        "com.intellij.javaee",
-        "com.intellij.javaee.web",
-        "com.intellij.spring",
-        "com.intellij.freemarker",
-        "com.intellij.velocity",
-        "org.intellij.groovy",
-        "JavaScript",
-        "com.intellij.java-i18n"
-    ))
+        bundledPlugins(
+            "com.intellij.javaee",
+            "com.intellij.javaee.web",
+            "com.intellij.spring",
+            "com.intellij.freemarker",
+            "com.intellij.velocity",
+            "org.intellij.groovy",
+            "com.intellij.jsp",
+            "JavaScript",
+            "com.intellij.java-i18n"
+        )
+
+        pluginVerifier()
+        zipSigner()
+        instrumentationTools()
+    }
+}
+
+intellijPlatform {
+    pluginConfiguration {
+        ideaVersion {
+            sinceBuild = "241"
+            untilBuild = "252.*"
+        }
+    }
+
+    signing {
+        certificateChain = System.getenv("CERTIFICATE_CHAIN")
+        privateKey = System.getenv("PRIVATE_KEY")
+        password = System.getenv("PRIVATE_KEY_PASSWORD")
+    }
+
+    publishing {
+        token = System.getenv("PUBLISH_TOKEN")
+    }
 }
 
 tasks {
-    // Set the JVM compatibility versions
     withType<JavaCompile> {
         sourceCompatibility = "17"
         targetCompatibility = "17"
@@ -40,24 +67,8 @@ tasks {
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions.jvmTarget = "17"
     }
-
-    patchPluginXml {
-        sinceBuild.set("231")
-        untilBuild.set("233.*")
-    }
-
-    signPlugin {
-        certificateChain.set(System.getenv("CERTIFICATE_CHAIN"))
-        privateKey.set(System.getenv("PRIVATE_KEY"))
-        password.set(System.getenv("PRIVATE_KEY_PASSWORD"))
-    }
-
-    publishPlugin {
-        token.set(System.getenv("PUBLISH_TOKEN"))
-    }
 }
 
-// https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin-faq.html#how-to-disable-building-searchable-options
 tasks.buildSearchableOptions {
     enabled = false
 }

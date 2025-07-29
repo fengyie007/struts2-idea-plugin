@@ -114,14 +114,17 @@ public class StrutsDataModel extends GraphDataModel<BasicStrutsNode, BasicStruts
   }
 
   @Override
-  public NodesGroup getGroup(final BasicStrutsNode basicStrutsNode) {
-    if (isGroupElements()) {
-      final XmlElement xmlElement = basicStrutsNode.getIdentifyingElement().getXmlElement();
-      assert xmlElement != null;
-      return myGroups.get(xmlElement.getContainingFile());
+  public NodesGroup getGroup(final BasicStrutsNode node) {
+    if (node != null) {
+        final XmlElement element = node.getIdentifyingElement().getXmlElement();
+        if (element != null) {
+            final PsiFile file = element.getContainingFile();
+            if (file != null) {
+                return myGroups.get(file);
+            }
+        }
     }
-
-    return super.getGroup(basicStrutsNode);
+    return null;
   }
 
   private void addNode(final BasicStrutsNode node) {

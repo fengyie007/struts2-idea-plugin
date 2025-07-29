@@ -74,7 +74,8 @@ final class TaglibOgnlInjector implements MultiHostInjector, DumbAware {
   public void getLanguagesToInject(@NotNull final MultiHostRegistrar multiHostRegistrar,
                                    @NotNull final PsiElement psiElement) {
     final FileType fileType = psiElement.getContainingFile().getFileType();
-    if (fileType != StdFileTypes.JSP && fileType != StdFileTypes.JSPX) {
+    // Replace deprecated StdFileTypes with direct type check
+    if (!"JSP".equals(fileType.getName()) && !"JSPX".equals(fileType.getName())) {
       return;
     }
 

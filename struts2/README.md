@@ -1,8 +1,8 @@
 # Struts 2
 
-Provides full integration of Apache Struts 2. Supports IDEA 2023.2.3
+Provides full integration of Apache Struts 2. Supports IDEA 2024.1+ to 2025.2.x
 
-提供对 Apache Struts 2 的完整集成功能。本插件由 BeanSoft 友情维护，
+提供对 Apache Struts 2 的完整集成功能。支持IDEA 2024.1+到2025.2.x版本。本插件由 BeanSoft 友情维护，
 <a href="https://plugins.jetbrains.com/organizations/BeanSoft">查看BeanSoft所有插件</a>。
 
 

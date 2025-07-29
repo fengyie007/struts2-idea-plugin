@@ -73,8 +73,8 @@ public class FileSetConfigurationTab extends FacetEditorTab implements Disposabl
   private JPanel myPanel;
 
   private final SimpleTree myTree;
-  private final AnActionButton myRemoveButton;
-  private final AnActionButton myEditButton;
+  private AnActionButton myRemoveButton;
+  private AnActionButton myEditButton;
   private JPanel myTreePanel;
 
   // GUI helpers
@@ -143,304 +143,319 @@ public class FileSetConfigurationTab extends FacetEditorTab implements Disposabl
       }
     });
 
+    // 修复AnActionButton.fromAction()过时问题
     final CommonActionsManager actionManager = CommonActionsManager.getInstance();
-    myTreePanel.add(
-      ToolbarDecorator.createDecorator(myTree)
-        .setAddAction(new AnActionButtonRunnable() {
-          @Override
-          public void run(AnActionButton button) {
-            final StrutsFileSet fileSet =
-              new StrutsFileSet(StrutsFileSet.getUniqueId(myBuffer),
-                                StrutsFileSet.getUniqueName(StrutsBundle.message("facet.fileset.my.fileset"), myBuffer),
-                                originalConfiguration) {
-                @Override
-                public boolean isNew() {
-                  return true;
-                }
-              };
+    final ToolbarDecorator decorator = ToolbarDecorator.createDecorator(myTree)
+      .setAddAction(new AnActionButtonRunnable() {
+        @Override
+        public void run(AnActionButton button) {
+          final StrutsFileSet fileSet =
+            new StrutsFileSet(StrutsFileSet.getUniqueId(myBuffer),
+                              StrutsFileSet.getUniqueName(StrutsBundle.message("facet.fileset.my.fileset"), myBuffer),
+                              originalConfiguration) {
+              @Override
+              public boolean isNew() {
+                return true;
+              }
+            };
 
+          final FileSetEditor editor = new FileSetEditor(myPanel,
+                                                         fileSet,
+                                                         facetEditorContext,
+                                                         myConfigsSearcher);
+          editor.show();
+          if (editor.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
+            final StrutsFileSet editedFileSet = editor.getEditedFileSet();
+            Disposer.register(strutsFacetConfiguration, editedFileSet);
+            myBuffer.add(editedFileSet);
+            myModified = true;
+            myModel.invalidateAsync().thenRun(() -> selectFileSet(editedFileSet));
+          }
+          IdeFocusManager.getGlobalInstance().doWhenFocusSettlesDown(() -> IdeFocusManager.getGlobalInstance().requestFocus(myTree, true));
+        }
+      })
+      .setEditAction(new AnActionButtonRunnable() {
+        @Override
+        public void run(AnActionButton button) {
+          myEditButton = button; // Store reference for later use
+          final StrutsFileSet fileSet = getCurrentFileSet();
+          if (fileSet != null) {
             final FileSetEditor editor = new FileSetEditor(myPanel,
                                                            fileSet,
                                                            facetEditorContext,
                                                            myConfigsSearcher);
             editor.show();
             if (editor.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
-              final StrutsFileSet editedFileSet = editor.getEditedFileSet();
-              Disposer.register(strutsFacetConfiguration, editedFileSet);
-              myBuffer.add(editedFileSet);
               myModified = true;
-              myModel.invalidateAsync().thenRun(() -> selectFileSet(editedFileSet));
+              myBuffer.remove(fileSet);
+              final StrutsFileSet edited = editor.getEditedFileSet();
+              Disposer.register(strutsFacetConfiguration, edited);
+              myBuffer.add(edited);
+              edited.setAutodetected(false);
+              myModel.invalidateAsync();
+              selectFileSet(edited);
             }
             IdeFocusManager.getGlobalInstance().doWhenFocusSettlesDown(() -> IdeFocusManager.getGlobalInstance().requestFocus(myTree, true));
           }
-        })
-        .setRemoveAction(new AnActionButtonRunnable() {
-          @Override
-          public void run(AnActionButton button) {
-            remove();
-            myModified = true;
-            myModel.invalidateAsync();
-            IdeFocusManager.getGlobalInstance().doWhenFocusSettlesDown(() -> IdeFocusManager.getGlobalInstance().requestFocus(myTree, true));
-          }
-        })
-        .setEditAction(new AnActionButtonRunnable() {
-          @Override
-          public void run(AnActionButton button) {
-            final StrutsFileSet fileSet = getCurrentFileSet();
-            if (fileSet != null) {
-              final FileSetEditor editor = new FileSetEditor(myPanel,
-                                                             fileSet,
-                                                             facetEditorContext,
-                                                             myConfigsSearcher);
-              editor.show();
-              if (editor.getExitCode() == DialogWrapper.OK_EXIT_CODE) {
-                myModified = true;
-                myBuffer.remove(fileSet);
-                final StrutsFileSet edited = editor.getEditedFileSet();
-                Disposer.register(strutsFacetConfiguration, edited);
-                myBuffer.add(edited);
-                edited.setAutodetected(false);
-                myModel.invalidateAsync();
-                selectFileSet(edited);
-              }
-              IdeFocusManager.getGlobalInstance().doWhenFocusSettlesDown(() -> IdeFocusManager.getGlobalInstance().requestFocus(myTree, true));
-            }
-          }
-        })
-        .addExtraAction(AnActionButton.fromAction(actionManager.createExpandAllAction(myTreeExpander, myTree)))
-        .addExtraAction(AnActionButton.fromAction(actionManager.createCollapseAllAction(myTreeExpander, myTree)))
-        .addExtraAction(new AnActionButton(StrutsBundle.messagePointer("action.AnActionButton.text.open.struts.2.plugin.documentation"),
-                                           AllIcons.Actions.Help) {
-          @Override
-          public void actionPerformed(@NotNull AnActionEvent e) {
-            BrowserUtil.browse("https://confluence.jetbrains.com/pages/viewpage.action?pageId=35367");
-          }
-
-          @Override
-          public @NotNull ActionUpdateThread getActionUpdateThread() {
-            return ActionUpdateThread.EDT;
-          }
-        })
-
-        .disableUpDownActions()
-        .createPanel());
-
-    myEditButton = ToolbarDecorator.findEditButton(myTreePanel);
-    myRemoveButton = ToolbarDecorator.findRemoveButton(myTreePanel);
-
-    AnActionButton addButton = ToolbarDecorator.findAddButton(myTreePanel);
-    assert addButton != null;
-    dumbService.makeDumbAware(addButton.getContextComponent(), this);
-    dumbService.makeDumbAware(myEditButton.getContextComponent(), this);
-  }
-
-  @Nullable
-  private StrutsFileSet getCurrentFileSet() {
-    final FileSetNode currentFileSetNode = getCurrentFileSetNode();
-    return currentFileSetNode == null ? null : currentFileSetNode.mySet;
-  }
-
-  @Nullable
-  private FileSetNode getCurrentFileSetNode() {
-    final SimpleNode selectedNode = myTree.getSelectedNode();
-    if (selectedNode == null) {
-      return null;
-    }
-    if (selectedNode instanceof FileSetNode) {
-      return (FileSetNode)selectedNode;
-    }
-    else if (selectedNode.getParent() instanceof FileSetNode) {
-      return (FileSetNode)selectedNode.getParent();
-    }
-    else {
-      final SimpleNode parent = selectedNode.getParent();
-      if (parent != null && parent.getParent() instanceof FileSetNode) {
-        return (FileSetNode)selectedNode.getParent().getParent();
-      }
-    }
-    return null;
-  }
-
-  private void selectFileSet(final StrutsFileSet fileSet) {
-    SimpleNode simpleNode = ContainerUtil.find(myRootNode.getChildren(), node -> ((FileSetNode)node).mySet == fileSet);
-    assert simpleNode != null;
-    myModel.select(simpleNode, myTree, path -> {});
-  }
-
-  private void remove() {
-    final SimpleNode[] nodes = myTree.getSelectedNodesIfUniform();
-    for (final SimpleNode node : nodes) {
-
-      if (node instanceof FileSetNode) {
-        final StrutsFileSet fileSet = ((FileSetNode)node).mySet;
-        if (fileSet.getFiles().isEmpty()) {
-          myBuffer.remove(fileSet);
-          return;
+        }
+      })
+      .setRemoveAction(new AnActionButtonRunnable() {
+        @Override
+        public void run(AnActionButton button) {
+          myRemoveButton = button; // Store reference for later use
+          remove();
+          myModified = true;
+          myModel.invalidateAsync();
+          IdeFocusManager.getGlobalInstance().doWhenFocusSettlesDown(() -> IdeFocusManager.getGlobalInstance().requestFocus(myTree, true));
+        }
+      })
+      // 修复：使用新的API创建展开/折叠按钮
+      .addExtraAction(new AnActionButton("Expand All", AllIcons.Actions.Expandall) {
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+          myTreeExpander.expandAll();
+        }
+        
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+          return ActionUpdateThread.EDT;
+        }
+      })
+      .addExtraAction(new AnActionButton("Collapse All", AllIcons.Actions.Collapseall) {
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+          myTreeExpander.collapseAll();
+        }
+        
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+          return ActionUpdateThread.EDT;
+        }
+      })
+      .addExtraAction(new AnActionButton(StrutsBundle.message("action.AnActionButton.text.open.struts.2.plugin.documentation"),
+                                         AllIcons.Actions.Help) {
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+          BrowserUtil.browse("https://confluence.jetbrains.com/pages/viewpage.action?pageId=35367");
         }
 
-        final int result = Messages.showYesNoDialog(myPanel,
-                                                    StrutsBundle.message("facet.fileset.remove.fileset.question",
-                                                                         fileSet.getName()),
-                                                    StrutsBundle.message("facet.fileset.remove.fileset.title"),
-                                                    Messages.getQuestionIcon());
-        if (result == Messages.YES) {
-          if (fileSet.isAutodetected()) {
-            fileSet.setRemoved(true);
-            myBuffer.add(fileSet);
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+          return ActionUpdateThread.EDT;
+        }
+      })
+      .disableUpDownActions();
+
+    myTreePanel.add(decorator.createPanel());
+  }
+
+      @Nullable
+      private StrutsFileSet getCurrentFileSet() {
+        final FileSetNode currentFileSetNode = getCurrentFileSetNode();
+        return currentFileSetNode == null ? null : currentFileSetNode.mySet;
+      }
+
+      @Nullable
+      private FileSetNode getCurrentFileSetNode() {
+        final SimpleNode selectedNode = myTree.getSelectedNode();
+        if (selectedNode == null) {
+          return null;
+        }
+        if (selectedNode instanceof FileSetNode) {
+          return (FileSetNode)selectedNode;
+        }
+        else if (selectedNode.getParent() instanceof FileSetNode) {
+          return (FileSetNode)selectedNode.getParent();
+        }
+        else {
+          final SimpleNode parent = selectedNode.getParent();
+          if (parent != null && parent.getParent() instanceof FileSetNode) {
+            return (FileSetNode)selectedNode.getParent().getParent();
+          }
+        }
+        return null;
+      }
+
+      private void selectFileSet(final StrutsFileSet fileSet) {
+        SimpleNode simpleNode = ContainerUtil.find(myRootNode.getChildren(), node -> ((FileSetNode)node).mySet == fileSet);
+        assert simpleNode != null;
+        myModel.select(simpleNode, myTree, path -> {});
+      }
+
+      private void remove() {
+        final SimpleNode[] nodes = myTree.getSelectedNodesIfUniform();
+        for (final SimpleNode node : nodes) {
+    
+          if (node instanceof FileSetNode) {
+            final StrutsFileSet fileSet = ((FileSetNode)node).mySet;
+            if (fileSet.getFiles().isEmpty()) {
+              myBuffer.remove(fileSet);
+              return;
+            }
+    
+            final int result = Messages.showYesNoDialog(myPanel,
+                                                        StrutsBundle.message("facet.fileset.remove.fileset.question",
+                                                                             fileSet.getName()),
+                                                        StrutsBundle.message("facet.fileset.remove.fileset.title"),
+                                                        Messages.getQuestionIcon());
+            if (result == Messages.YES) {
+              if (fileSet.isAutodetected()) {
+                fileSet.setRemoved(true);
+                myBuffer.add(fileSet);
+              }
+              else {
+                myBuffer.remove(fileSet);
+              }
+            }
+          }
+          else if (node instanceof ConfigFileNode) {
+            final VirtualFilePointer filePointer = ((ConfigFileNode)node).myFilePointer;
+            final StrutsFileSet fileSet = ((FileSetNode)node.getParent()).mySet;
+            fileSet.removeFile(filePointer);
+          }
+        }
+      }
+
+      @Override
+      @Nls
+      public String getDisplayName() {
+        return StrutsBundle.message("facet.fileset.title");
+      }
+
+      @Override
+      @NotNull
+      public JComponent createComponent() {
+        return myPanel;
+      }
+
+      @Override
+      public boolean isModified() {
+        return myModified;
+      }
+
+      @Override
+      public void apply() {
+        final Set<StrutsFileSet> fileSets = originalConfiguration.getFileSets();
+        fileSets.clear();
+        for (final StrutsFileSet fileSet : myBuffer) {
+          if (!fileSet.isAutodetected() || fileSet.isRemoved()) {
+            fileSets.add(fileSet);
+          }
+        }
+        originalConfiguration.setModified();
+        myModified = false;
+      }
+
+      @Override
+      public void reset() {
+        myBuffer.clear();
+        final Set<StrutsFileSet> sets = StrutsManager.getInstance(module.getProject()).getAllConfigFileSets(module);
+        /*new StrutsFileSet(fileSet)*/
+        myBuffer.addAll(sets);
+
+        myModel.invalidateAsync();
+        myTree.setSelectionRow(0);
+      }
+
+      @Override
+      public void disposeUIResources() {
+        Disposer.dispose(this);
+      }
+
+      @Override
+      public void dispose() {
+      }
+
+      private class FileSetNode extends SimpleNode {
+
+        protected final StrutsFileSet mySet;
+
+        FileSetNode(final StrutsFileSet fileSet) {
+          super(myRootNode);
+          mySet = fileSet;
+
+          final PresentationData presentationData = getPresentation();
+          final String name = mySet.getName(); //NON-NLS
+
+          if (fileSet.getFiles().isEmpty()) {
+            presentationData.addText(name, getErrorAttributes());
+            presentationData.setTooltip(StrutsBundle.message("facet.fileset.no.files.attached"));
           }
           else {
-            myBuffer.remove(fileSet);
+            presentationData.addText(name, getPlainAttributes());
+            presentationData.setLocationString(Integer.toString(fileSet.getFiles().size()));
           }
         }
+
+        @Override
+        public SimpleNode @NotNull [] getChildren() {
+          final List<SimpleNode> nodes = new ArrayList<>();
+
+          for (final VirtualFilePointer file : mySet.getFiles()) {
+            nodes.add(new ConfigFileNode(file, this));
+          }
+          return nodes.toArray(new SimpleNode[0]);
+        }
+
+        @Override
+        public boolean isAutoExpandNode() {
+          return true;
+        }
+
+        @Override
+        public Object @NotNull [] getEqualityObjects() {
+          return new Object[]{mySet, mySet.getName(), mySet.getFiles()};
+        }
       }
-      else if (node instanceof ConfigFileNode) {
-        final VirtualFilePointer filePointer = ((ConfigFileNode)node).myFilePointer;
-        final StrutsFileSet fileSet = ((FileSetNode)node.getParent()).mySet;
-        fileSet.removeFile(filePointer);
+
+
+      private static final class ConfigFileNode extends SimpleNode {
+
+        private final VirtualFilePointer myFilePointer;
+
+        ConfigFileNode(final VirtualFilePointer name, final SimpleNode parent) {
+          super(parent);
+          myFilePointer = name;
+          getTemplatePresentation().setIcon(StrutsIcons.STRUTS_CONFIG_FILE);
+        }
+
+        @Override
+        public boolean isAlwaysLeaf() {
+          return true;
+        }
+
+        @Override
+        protected void doUpdate(@NotNull PresentationData presentation) {
+          final VirtualFile file = myFilePointer.getFile();
+          if (file != null) {
+            renderFile(presentation, file, getPlainAttributes(), null);
+          }
+          else {
+            renderFile(presentation, null, getErrorAttributes(), StrutsBundle.message("facet.fileset.file.not.found"));
+          }
+        }
+
+        private void renderFile(@NotNull PresentationData presentation,
+                                final VirtualFile file,
+                                final SimpleTextAttributes textAttributes,
+                                @NlsContexts.Tooltip @Nullable final String toolTip) {
+          presentation.setTooltip(toolTip);
+          presentation.clearText();
+          presentation.addText(myFilePointer.getFileName(), textAttributes); //NON-NLS
+
+          if (file != null) {
+            presentation.setLocationString(file.getPath());
+          }
+        }
+
+        @Override
+        public SimpleNode @NotNull [] getChildren() {
+          return NO_CHILDREN;
+        }
       }
-    }
-  }
 
-  @Override
-  @Nls
-  public String getDisplayName() {
-    return StrutsBundle.message("facet.fileset.title");
-  }
-
-  @Override
-  @NotNull
-  public JComponent createComponent() {
-    return myPanel;
-  }
-
-  @Override
-  public boolean isModified() {
-    return myModified;
-  }
-
-  @Override
-  public void apply() {
-    final Set<StrutsFileSet> fileSets = originalConfiguration.getFileSets();
-    fileSets.clear();
-    for (final StrutsFileSet fileSet : myBuffer) {
-      if (!fileSet.isAutodetected() || fileSet.isRemoved()) {
-        fileSets.add(fileSet);
-      }
-    }
-    originalConfiguration.setModified();
-    myModified = false;
-  }
-
-  @Override
-  public void reset() {
-    myBuffer.clear();
-    final Set<StrutsFileSet> sets = StrutsManager.getInstance(module.getProject()).getAllConfigFileSets(module);
-    /*new StrutsFileSet(fileSet)*/
-    myBuffer.addAll(sets);
-
-    myModel.invalidateAsync();
-    myTree.setSelectionRow(0);
-  }
-
-  @Override
-  public void disposeUIResources() {
-    Disposer.dispose(this);
-  }
-
-  @Override
-  public void dispose() {
-  }
-
-  private class FileSetNode extends SimpleNode {
-
-    protected final StrutsFileSet mySet;
-
-    FileSetNode(final StrutsFileSet fileSet) {
-      super(myRootNode);
-      mySet = fileSet;
-
-      final PresentationData presentationData = getPresentation();
-      final String name = mySet.getName(); //NON-NLS
-
-      if (fileSet.getFiles().isEmpty()) {
-        presentationData.addText(name, getErrorAttributes());
-        presentationData.setTooltip(StrutsBundle.message("facet.fileset.no.files.attached"));
-      }
-      else {
-        presentationData.addText(name, getPlainAttributes());
-        presentationData.setLocationString(Integer.toString(fileSet.getFiles().size()));
+      @Override
+      public String getHelpTopic() {
+        return "reference.settings.project.structure.facets.struts2.facet";
       }
     }
-
-    @Override
-    public SimpleNode @NotNull [] getChildren() {
-      final List<SimpleNode> nodes = new ArrayList<>();
-
-      for (final VirtualFilePointer file : mySet.getFiles()) {
-        nodes.add(new ConfigFileNode(file, this));
-      }
-      return nodes.toArray(new SimpleNode[0]);
-    }
-
-    @Override
-    public boolean isAutoExpandNode() {
-      return true;
-    }
-
-    @Override
-    public Object @NotNull [] getEqualityObjects() {
-      return new Object[]{mySet, mySet.getName(), mySet.getFiles()};
-    }
-  }
-
-
-  private static final class ConfigFileNode extends SimpleNode {
-
-    private final VirtualFilePointer myFilePointer;
-
-    ConfigFileNode(final VirtualFilePointer name, final SimpleNode parent) {
-      super(parent);
-      myFilePointer = name;
-      getTemplatePresentation().setIcon(StrutsIcons.STRUTS_CONFIG_FILE);
-    }
-
-    @Override
-    public boolean isAlwaysLeaf() {
-      return true;
-    }
-
-    @Override
-    protected void doUpdate(@NotNull PresentationData presentation) {
-      final VirtualFile file = myFilePointer.getFile();
-      if (file != null) {
-        renderFile(presentation, file, getPlainAttributes(), null);
-      }
-      else {
-        renderFile(presentation, null, getErrorAttributes(), StrutsBundle.message("facet.fileset.file.not.found"));
-      }
-    }
-
-    private void renderFile(@NotNull PresentationData presentation,
-                            final VirtualFile file,
-                            final SimpleTextAttributes textAttributes,
-                            @NlsContexts.Tooltip @Nullable final String toolTip) {
-      presentation.setTooltip(toolTip);
-      presentation.clearText();
-      presentation.addText(myFilePointer.getFileName(), textAttributes); //NON-NLS
-
-      if (file != null) {
-        presentation.setLocationString(file.getPath());
-      }
-    }
-
-    @Override
-    public SimpleNode @NotNull [] getChildren() {
-      return NO_CHILDREN;
-    }
-  }
-
-  @Override
-  public String getHelpTopic() {
-    return "reference.settings.project.structure.facets.struts2.facet";
-  }
-}

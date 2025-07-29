@@ -57,7 +57,8 @@ final class TaglibCssInlineStyleInjector implements MultiHostInjector, DumbAware
   @Override
   public void getLanguagesToInject(@NotNull final MultiHostRegistrar registrar, @NotNull final PsiElement context) {
     final FileType fileType = context.getContainingFile().getFileType();
-    if (fileType != StdFileTypes.JSP && fileType != StdFileTypes.JSPX) {
+    // Replace deprecated StdFileTypes with direct type check
+    if (!"JSP".equals(fileType.getName()) && !"JSPX".equals(fileType.getName())) {
       return;
     }
 

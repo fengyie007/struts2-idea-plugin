@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE struts PUBLIC
+        "-//Apache Software Foundation//DTD Struts Configuration 2.5//EN"
+        "http://struts.apache.org/dtds/struts-2.5.dtd">
+
+<struts>
+    <package name="common" namespace="/common" extends="struts-default">
+        <action name="processCodeInputContinue" class="com.example.ProcessCodeInputContinueAction">
+            <result name="success">/success.jsp</result>
+            <result name="error">/error.jsp</result>
+        </action>
+        
+        <action name="anotherAction" class="com.example.AnotherAction">
+            <result name="success">/another.jsp</result>
+        </action>
+    </package>
+</struts>

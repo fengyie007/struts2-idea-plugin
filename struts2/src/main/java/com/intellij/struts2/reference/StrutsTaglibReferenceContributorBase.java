@@ -15,7 +15,6 @@
 
 package com.intellij.struts2.reference;
 
-import com.intellij.openapi.fileTypes.StdFileTypes;
 import com.intellij.openapi.paths.PathReferenceManager;
 import com.intellij.patterns.XmlAttributeValuePattern;
 import com.intellij.psi.*;
@@ -35,6 +34,7 @@ import java.util.Arrays;
 import static com.intellij.patterns.PlatformPatterns.virtualFile;
 import static com.intellij.patterns.StandardPatterns.and;
 import static com.intellij.patterns.StandardPatterns.or;
+import static com.intellij.patterns.StandardPatterns.string;
 import static com.intellij.patterns.XmlPatterns.xmlAttributeValue;
 import static com.intellij.patterns.XmlPatterns.xmlTag;
 
@@ -132,8 +132,8 @@ public abstract class StrutsTaglibReferenceContributorBase extends PsiReferenceC
    */
   private final XmlAttributeValuePattern jspElementPattern =
       xmlAttributeValue()
-          .inVirtualFile(or(virtualFile().ofType(StdFileTypes.JSP),
-                            virtualFile().ofType(StdFileTypes.JSPX)))
+          .inVirtualFile(or(virtualFile().withName(string().endsWith(".jsp")),
+                            virtualFile().withName(string().endsWith(".jspx"))))
           .withSuperParent(2, xmlTag().withNamespace(getNamespace()));
 
   /**

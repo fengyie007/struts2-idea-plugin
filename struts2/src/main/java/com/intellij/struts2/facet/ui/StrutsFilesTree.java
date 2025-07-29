@@ -50,10 +50,10 @@ public class StrutsFilesTree extends CheckboxTreeBase {
 
   public void updateFileSet(final StrutsFileSet fileSet) {
     final Set<VirtualFile> configured = new HashSet<>();
-    TreeUtil.traverse((TreeNode)getModel().getRoot(), node -> {
+    TreeUtil.treeNodeTraverser((TreeNode)getModel().getRoot()).forEach(node -> {
       final CheckedTreeNode checkedTreeNode = (CheckedTreeNode)node;
       if (!checkedTreeNode.isChecked()) {
-        return true;
+        return;
       }
       final Object object = checkedTreeNode.getUserObject();
       VirtualFile virtualFile = null;
@@ -69,7 +69,6 @@ public class StrutsFilesTree extends CheckboxTreeBase {
         }
         configured.add(virtualFile);
       }
-      return true;
     });
 
     for (Iterator<VirtualFilePointer> i = fileSet.getFiles().iterator(); i.hasNext(); ) {

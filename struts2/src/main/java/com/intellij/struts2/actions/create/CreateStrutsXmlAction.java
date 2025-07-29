@@ -35,11 +35,11 @@ import org.jetbrains.annotations.NotNull;
  * @author Yann C&eacute;bron
  */
 final class CreateStrutsXmlAction extends CreateFileAction {
-  public CreateStrutsXmlAction() {
-    super(StrutsBundle.messagePointer("create.config.new.file"),
-          StrutsBundle.messagePointer("create.config.new.file.description"),
-          StrutsIcons.STRUTS_CONFIG_FILE);
-  }
+    public CreateStrutsXmlAction() {
+        getTemplatePresentation().setText(StrutsBundle.message("create.config.new.file"));
+        getTemplatePresentation().setDescription(StrutsBundle.message("create.config.new.file.description"));
+        getTemplatePresentation().setIcon(StrutsIcons.STRUTS_CONFIG_FILE);
+    }
 
   @Override
   protected boolean isAvailable(final DataContext dataContext) {

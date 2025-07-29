@@ -96,7 +96,7 @@ public final class FileReferenceSetHelper {
           final List<PsiFileSystemItem> basePathRoots = new ArrayList<>();
 
           // 1. add all configured web root mappings
-          final List<WebRoot> webRoots = webFacet.getWebRoots(true);
+          final List<WebRoot> webRoots = webFacet.getWebRoots();
           for (final WebRoot webRoot : webRoots) {
             final String webRootPath = webRoot.getRelativePath();
             final WebDirectoryElement webRootBase =
