@@ -91,6 +91,8 @@
                                   implementation="com.intellij.struts2.reference.StrutsBootstrapTaglibReferenceContributor"/>
         <psi.referenceContributor language="XML"
                                   implementation="com.intellij.struts2.reference.HtmlFormReferenceContributor"/>
+        <psi.referenceContributor language="JavaScript"
+                                  implementation="com.intellij.struts2.reference.js.JavaScriptStrutsReferenceContributor"/>
 
         <iconProvider implementation="com.intellij.struts2.Struts2IconProvider"/>
         <problemFileHighlightFilter implementation="com.intellij.struts2.Struts2ProblemFileHighlightFilter"/>
