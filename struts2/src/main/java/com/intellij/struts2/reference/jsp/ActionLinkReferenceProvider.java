@@ -24,6 +24,7 @@ import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiReference;
 import com.intellij.psi.PsiReferenceBase;
+import com.intellij.psi.html.HtmlTag;
 import com.intellij.struts2.Struts2Icons;
 import com.intellij.struts2.StrutsIcons;
 import com.intellij.struts2.dom.struts.action.Action;
@@ -34,12 +35,17 @@ import com.intellij.struts2.model.constant.StrutsConstantHelper;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.ConstantFunction;
 import com.intellij.util.containers.ContainerUtil;
+import com.intellij.psi.util.PsiTreeUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import static com.intellij.struts2.reference.ActionUtils.getActionName;
+import static com.intellij.struts2.reference.ActionUtils.getNamespace;
 
 /**
  * Provides links to Action-URLs in all places where Servlet-URLs are processed.
@@ -137,15 +143,55 @@ TODO not needed so far ?!
         return null;
       }
 
+      // First try: use original logic
       final String actionName = getActionName(fullActionPath, ourActionExtension);
       final String namespace = getNamespace(fullActionPath);
-      final List<Action> actions = strutsModel.findActionsByName(actionName, namespace);
+      List<Action> actions = strutsModel.findActionsByName(actionName, namespace);
+      
+      // If original logic found results, return them
+      if (!actions.isEmpty()) {
+        return getFirstActionElement(actions);
+      }
+
+      //删除第一级path前缀,再进行查找
+      int pos = -1;
+      if(fullActionPath.startsWith("/")) {
+        pos = StringUtils.indexOf(fullActionPath, "/", 1);
+      } else {
+        pos = StringUtils.indexOf(fullActionPath, "/");
+      }
+      if (pos != -1) {
+        String fullActionPathNew = fullActionPath.substring(pos);
+        final String actionName2 = getActionName(fullActionPathNew, ourActionExtension);
+        final String namespace2 = getNamespace(fullActionPathNew);
+        List<Action> actions2 = strutsModel.findActionsByName(actionName2, namespace2);
+
+        // If original logic found results, return them
+        if (!actions2.isEmpty()) {
+          return getFirstActionElement(actions2);
+        }
+      }
+
+      // If original logic didn't find results, try to resolve action in HTML form tag
+      final HtmlTag htmlTag = PsiTreeUtil.getParentOfType(getElement().getParent(), HtmlTag.class);
+      if (htmlTag != null && htmlTag.getName().equals("form")) {
+        final String xmlNamespace = htmlTag.getAttributeValue("namespace");
+        // Try with XML-derived namespace
+        actions = strutsModel.findActionsByName(actionName, xmlNamespace);
+        if (!actions.isEmpty()) {
+          final Action myAction = actions.get(0);
+          return myAction.getXmlTag();
+        }
+      }
+      
+      return null;
+    }
+
+    private PsiElement getFirstActionElement(List<Action> actions) {
       if (actions.isEmpty()) {
         return null;
       }
-
-      final Action myAction = actions.get(0);
-      return myAction.getXmlTag();
+      return actions.get(0).getXmlTag();
     }
 
     @Override
@@ -173,39 +219,7 @@ TODO not needed so far ?!
       return "Cannot resolve action '" + getValue() + "'";
     }
 
-    @NotNull
-    private static String getActionName(final String fullActionPath,
-                                        final String ourActionExtension) {
-      final int slashIndex = fullActionPath.lastIndexOf("/");
-      final int extensionIndex = fullActionPath.lastIndexOf(ourActionExtension);
-      return fullActionPath.substring(slashIndex + 1, extensionIndex);
-    }
   }
-
-  /**
-   * Extracts the namespace from the given action path.
-   *
-   * @param fullActionPath Full path.
-   * @return Namespace.
-   */
-  @NotNull
-  private static String getNamespace(final String fullActionPath) {
-
-    final int lastSlash = fullActionPath.lastIndexOf('/');
-    // no slash, use fake "root" for resolving "myAction.action"
-    if (lastSlash == -1) {
-      return "/";
-    }
-
-    // root-package
-    if (lastSlash == 0) {
-      return "/";
-    }
-
-    final int firstSlash = fullActionPath.indexOf('/');
-    return fullActionPath.substring(firstSlash, lastSlash);
-  }
-
 
   /**
    * Provides reference to S2-package within action-path.

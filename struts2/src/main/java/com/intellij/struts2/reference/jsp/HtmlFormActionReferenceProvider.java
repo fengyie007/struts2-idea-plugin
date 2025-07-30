@@ -18,6 +18,7 @@ package com.intellij.struts2.reference.jsp;
 import com.intellij.codeInsight.daemon.EmptyResolveMessageProvider;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.openapi.util.TextRange;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiReference;
 import com.intellij.psi.PsiReferenceBase;
@@ -29,16 +30,20 @@ import com.intellij.struts2.Struts2Icons;
 import com.intellij.struts2.dom.struts.action.Action;
 import com.intellij.struts2.dom.struts.model.StrutsManager;
 import com.intellij.struts2.dom.struts.model.StrutsModel;
+import com.intellij.struts2.model.constant.StrutsConstantHelper;
 import com.intellij.struts2.reference.TaglibUtil;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.ArrayUtilRt;
 import com.intellij.util.ProcessingContext;
+import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.intellij.struts2.reference.ActionUtils.getActionName;
 
 /**
  * Provides reference resolution for HTML form action attribute that can work with separate namespace attribute.
@@ -56,12 +61,17 @@ public class HtmlFormActionReferenceProvider extends PsiReferenceProvider {
     if (strutsModel == null) {
       return PsiReference.EMPTY_ARRAY;
     }
+    final List<String> actionExtensions = StrutsConstantHelper.getActionExtensions(psiElement);
 
     final XmlAttributeValue xmlAttributeValue = (XmlAttributeValue) psiElement;
     final String path = xmlAttributeValue.getValue();
 
-    // resolve to <action>
-    final String actionName = TaglibUtil.trimActionPath(path);
+    final String ourActionExtension = ContainerUtil.find(actionExtensions, s -> StringUtil.endsWith(path, s));
+    if (ourActionExtension == null) {
+      return null;
+    }
+    // First try: use original logic
+    final String actionName = getActionName(path, ourActionExtension);
     final String namespace = getNamespaceFromFormTag(xmlAttributeValue);
     final List<Action> actions = strutsModel.findActionsByName(actionName, namespace);
     final Action action = actions.isEmpty() ? null : actions.get(0);
@@ -81,38 +91,7 @@ public class HtmlFormActionReferenceProvider extends PsiReferenceProvider {
    */
   @Nullable
   private static String getNamespaceFromFormTag(@NotNull final XmlAttributeValue xmlAttributeValue) {
-    final XmlTag tag = PsiTreeUtil.getParentOfType(xmlAttributeValue, XmlTag.class);
-    if (tag == null) {
-      return null;
-    }
-
-    // Check current tag for namespace attribute
-    String namespace = tag.getAttributeValue("namespace");
-    if (namespace != null) {
-      return namespace;
-    }
-
-    // If this is an action attribute in a form tag, look for namespace in the same tag
-    final String attributeName = xmlAttributeValue.getParent() instanceof com.intellij.psi.xml.XmlAttribute ? 
-        ((com.intellij.psi.xml.XmlAttribute) xmlAttributeValue.getParent()).getName() : null;
-    if ("action".equals(attributeName) && "form".equals(tag.getLocalName())) {
-      namespace = tag.getAttributeValue("namespace");
-      if (namespace != null) {
-        return namespace;
-      }
-    }
-
-    // Look up the parent hierarchy for namespace
-    XmlTag parentTag = tag.getParentTag();
-    while (parentTag != null) {
-      namespace = parentTag.getAttributeValue("namespace");
-      if (namespace != null) {
-        return namespace;
-      }
-      parentTag = parentTag.getParentTag();
-    }
-
-    return null;
+    return TaglibUtil.getNamespaceFromAttributeValue(xmlAttributeValue);
   }
 
   private static final class ActionMethodReference extends PsiReferenceBase<XmlAttributeValue> implements EmptyResolveMessageProvider {

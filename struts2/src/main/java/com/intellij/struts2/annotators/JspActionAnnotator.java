@@ -32,6 +32,7 @@ import com.intellij.struts2.dom.struts.action.Action;
 import com.intellij.struts2.dom.struts.model.StrutsManager;
 import com.intellij.struts2.dom.struts.model.StrutsModel;
 import com.intellij.struts2.facet.StrutsFacet;
+import com.intellij.struts2.reference.TaglibUtil;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.xml.util.XmlTagUtil;
 import org.jetbrains.annotations.NonNls;
@@ -127,7 +128,7 @@ public final class JspActionAnnotator extends LineMarkerProviderDescriptor {
       return;
     }
 
-    final String namespace = xmlTag.getAttributeValue("namespace");
+    final String namespace = TaglibUtil.getNamespaceFromTag(xmlTag);
     final List<Action> actions = strutsModel.findActionsByName(actionPath, namespace);
     if (actions.isEmpty()) {
       return;

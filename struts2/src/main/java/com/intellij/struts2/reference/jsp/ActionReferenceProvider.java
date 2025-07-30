@@ -76,32 +76,8 @@ public class ActionReferenceProvider extends PsiReferenceProvider {
 
   @Nullable
   private static String getNamespace(@NotNull final XmlAttributeValue xmlAttributeValue) {
-    final XmlTag tag = PsiTreeUtil.getParentOfType(xmlAttributeValue, XmlTag.class);
-    if (tag == null) {
-      return null;
-    }
-
-    // First try to get namespace from same tag
-    String namespace = tag.getAttributeValue("namespace");
-    
-    // If namespace not found and this is an action attribute, check for separate namespace attribute
-    final String attributeName = xmlAttributeValue.getParent() instanceof com.intellij.psi.xml.XmlAttribute ? 
-        ((com.intellij.psi.xml.XmlAttribute) xmlAttributeValue.getParent()).getName() : null;
-    if (namespace == null && "action".equals(attributeName)) {
-      // Look for namespace attribute in the same form tag
-      namespace = tag.getAttributeValue("namespace");
-      
-      // If still not found, check if this is within another tag that might have namespace
-      XmlTag parentTag = tag.getParentTag();
-      while (parentTag != null && namespace == null) {
-        namespace = parentTag.getAttributeValue("namespace");
-        parentTag = parentTag.getParentTag();
-      }
-    }
-    
-    return namespace;
+    return TaglibUtil.getNamespaceFromAttributeValue(xmlAttributeValue);
   }
-
 
   private static final class ActionMethodReference extends PsiReferenceBase<XmlAttributeValue> implements EmptyResolveMessageProvider {
 
