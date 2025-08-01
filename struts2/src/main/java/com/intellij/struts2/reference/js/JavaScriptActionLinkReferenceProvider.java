@@ -54,8 +54,7 @@ import static com.intellij.struts2.reference.ActionUtils.getActionName;
  */
 public class JavaScriptActionLinkReferenceProvider extends PsiReferenceProvider {
 
-  // Pattern to match action URLs in JavaScript strings
-  private static final Pattern ACTION_URL_PATTERN = Pattern.compile("([^'\"]*\\.do)(?:\\\\?.*)?(?:['\"].*)?$");
+  // No longer using a static pattern - we'll dynamically check for configured action extensions
 
   @Override
   public PsiReference @NotNull [] getReferencesByElement(@NotNull final PsiElement psiElement,
@@ -81,13 +80,12 @@ public class JavaScriptActionLinkReferenceProvider extends PsiReferenceProvider 
       return PsiReference.EMPTY_ARRAY;
     }
 
-    // Find action URL in the string
-    final Matcher matcher = ACTION_URL_PATTERN.matcher(literalValue);
-    if (!matcher.find()) {
+    // Find action URL with any configured extension in the string
+    final String actionUrl = findActionUrlInString(literalValue, actionExtensions);
+    if (actionUrl == null) {
       return PsiReference.EMPTY_ARRAY;
     }
 
-    final String actionUrl = matcher.group(1);
     final String ourActionExtension = ContainerUtil.find(actionExtensions, s -> StringUtil.endsWith(actionUrl, s));
     if (ourActionExtension == null) {
       return PsiReference.EMPTY_ARRAY;
@@ -104,6 +102,26 @@ public class JavaScriptActionLinkReferenceProvider extends PsiReferenceProvider 
     final TextRange textRange = TextRange.from(startOffset + quoteOffset, actionUrl.length());
 
     return new PsiReference[]{new JavaScriptActionReference(jsLiteral, textRange, actionUrl, ourActionExtension, strutsModel)};
+  }
+
+  /**
+   * Finds action URL with any configured extension in the given string.
+   * @param literalValue the string literal value to search in
+   * @param actionExtensions list of configured action extensions
+   * @return the action URL if found, null otherwise
+   */
+  @Nullable
+  private static String findActionUrlInString(@NotNull final String literalValue, @NotNull final List<String> actionExtensions) {
+    for (final String extension : actionExtensions) {
+      // Create a pattern for this specific extension
+      final String escapedExtension = Pattern.quote(extension);
+      final Pattern pattern = Pattern.compile("([^'\"]*" + escapedExtension + ")(?:\\\\?.*)?(?:['\"].*)?$");
+      final Matcher matcher = pattern.matcher(literalValue);
+      if (matcher.find()) {
+        return matcher.group(1);
+      }
+    }
+    return null;
   }
 
   private static final class JavaScriptActionReference extends PsiReferenceBase<JSLiteralExpression> implements EmptyResolveMessageProvider {
