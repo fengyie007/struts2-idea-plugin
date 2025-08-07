@@ -68,7 +68,7 @@ public class HtmlFormActionReferenceProvider extends PsiReferenceProvider {
 
     final String ourActionExtension = ContainerUtil.find(actionExtensions, s -> StringUtil.endsWith(path, s));
     if (ourActionExtension == null) {
-      return null;
+      return PsiReference.EMPTY_ARRAY;
     }
     // First try: use original logic
     final String actionName = getActionName(path, ourActionExtension);

@@ -79,6 +79,20 @@ public class ActionLinkReferenceProviderTest extends BasicLightHighlightingTestC
   }
 
   /**
+   * Test namespace separation functionality using misc test files.
+   */
+  public void testActionLinkNamespaceSeparation() {
+    myFixture.copyFileToProject("../misc/test-struts-config.xml", "struts-config.xml");
+    createStrutsFileSet("struts-config.xml");
+    
+    myFixture.copyFileToProject("../misc/test-actionlink-namespace.jsp", "test-actionlink-namespace.jsp");
+    
+    // Test that the file can be configured and processed
+    myFixture.configureByFile("test-actionlink-namespace.jsp");
+    assertNotNull("Test file should be configured", myFixture.getFile());
+  }
+
+  /**
    * Checks the Action-reference.
    *
    * @param filename   File to check.

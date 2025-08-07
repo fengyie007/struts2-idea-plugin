@@ -17,8 +17,12 @@ package com.intellij.struts2.dom.inspection;
 
 import com.intellij.codeInspection.options.OptPane;
 import com.intellij.openapi.module.Module;
+import com.intellij.openapi.paths.PathReference;
+import com.intellij.openapi.paths.PathReferenceManager;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.xml.XmlElement;
 import com.intellij.psi.xml.XmlFile;
 import com.intellij.struts2.StrutsBundle;
 import com.intellij.struts2.dom.ConverterUtil;
@@ -32,6 +36,7 @@ import com.intellij.struts2.dom.struts.action.ActionMethodConverter;
 import com.intellij.struts2.dom.struts.action.Result;
 import com.intellij.struts2.dom.struts.action.StrutsPathReferenceConverter;
 import com.intellij.struts2.dom.struts.impl.path.ResultTypeResolver;
+import com.intellij.struts2.dom.struts.impl.path.StrutsResultContributor;
 import com.intellij.struts2.dom.struts.model.StrutsManager;
 import com.intellij.struts2.dom.struts.strutspackage.ResultType;
 import com.intellij.struts2.facet.ui.StrutsFileSet;
@@ -165,6 +170,26 @@ public class Struts2ModelInspection extends BasicDomElementsInspection<StrutsRoo
       // global URLs
       if (URLUtil.containsScheme(stringValue)) {
         return false;
+      }
+
+      // Check if the file actually exists - only show error if file doesn't exist
+      final XmlElement xmlElement = value.getXmlElement();
+      if (xmlElement != null) {
+        final Module module = value.getModule();
+        if (module != null) {
+          try {
+            final PathReference pathReference = PathReferenceManager.getInstance()
+              .getCustomPathReference(stringValue, module, xmlElement, StrutsResultContributor.EP_NAME.getExtensions());
+            if (pathReference != null) {
+              final PsiElement resolvedElement = pathReference.resolve();
+              if (resolvedElement != null) {
+                return false; // File exists, don't show error
+              }
+            }
+          } catch (Exception e) {
+            // If there's an exception during resolution, fall through to show error
+          }
+        }
       }
     }
 

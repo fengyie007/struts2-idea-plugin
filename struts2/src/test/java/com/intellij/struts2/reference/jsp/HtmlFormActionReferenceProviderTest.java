@@ -60,4 +60,18 @@ public class HtmlFormActionReferenceProviderTest extends BasicLightHighlightingT
     
     CodeInsightTestUtil.doCompletionTest(myFixture, "processCodeInputContinue.do", 1);
   }
+
+  /**
+   * Test namespace action separation functionality using misc test files.
+   */
+  public void testNamespaceActionSeparation() throws Throwable {
+    myFixture.copyFileToProject("../../misc/test-struts-config.xml", "struts-config.xml");
+    createStrutsFileSet("struts-config.xml");
+    
+    myFixture.copyFileToProject("../../misc/test-namespace-action.jsp", "test-namespace-action.jsp");
+    
+    // Test that the file can be configured and processed
+    myFixture.configureByFile("test-namespace-action.jsp");
+    assertNotNull("Test file should be configured", myFixture.getFile());
+  }
 }

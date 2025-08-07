@@ -17,4 +17,5 @@ public final class Struts2Icons {
   /** 16x16 */ public static final @NotNull Icon Action = load("icons/action.svg", 1640284181, 0);
   /** 10x10 */ public static final @NotNull Icon Action_small = load("icons/action_small.svg", -592871696, 0);
   /** 10x10 */ public static final @NotNull Icon Edit_small = load("icons/edit_small.svg", 1635832574, 0);
+  /** 10x10 */ public static final @NotNull Icon Method = load("icons/method.svg", 1635832575, 0);
 }

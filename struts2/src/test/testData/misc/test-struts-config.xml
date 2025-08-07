@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE struts PUBLIC
+        "-//Apache Software Foundation//DTD Struts Configuration 2.5//EN"
+        "http://struts.apache.org/dtds/struts-2.5.dtd">
+
+<struts>
+    <!-- Test package for /common namespace -->
+    <package name="common" namespace="/common" extends="struts-default">
+        <action name="processCodeInputContinue" class="com.example.ProcessCodeInputContinueAction">
+            <result name="success">/success.jsp</result>
+            <result name="error">/error.jsp</result>
+        </action>
+    </package>
+    
+    <!-- Test package for /test namespace -->
+    <package name="test" namespace="/test" extends="struts-default">
+        <action name="testAction" class="com.example.TestAction">
+            <result name="success">/test-success.jsp</result>
+        </action>
+    </package>
+    
+    <!-- Test package for /url namespace -->
+    <package name="url" namespace="/url" extends="struts-default">
+        <action name="urlAction" class="com.example.UrlAction">
+            <result name="success">/url-success.jsp</result>
+        </action>
+    </package>
+    
+    <!-- Test package for /parent namespace -->
+    <package name="parent" namespace="/parent" extends="struts-default">
+        <action name="childAction" class="com.example.ChildAction">
+            <result name="success">/child-success.jsp</result>
+        </action>
+    </package>
+</struts>

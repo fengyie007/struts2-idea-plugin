@@ -172,6 +172,8 @@
                         serviceImplementation="com.intellij.struts2.dom.struts.model.StrutsManagerImpl"/>
 
         <gotoSymbolContributor implementation="com.intellij.struts2.gotosymbol.GoToActionSymbolProvider"/>
+<!--        <gotoSymbolContributor implementation="com.intellij.struts2.gotosymbol.GoToActionMethodSymbolProvider"/>-->
+        <gotoSymbolContributor implementation="com.intellij.struts2.gotosymbol.GoToActionLinkSymbolProvider"/>
         <gotoSymbolContributor implementation="com.intellij.struts2.gotosymbol.GoToPackageSymbolProvider"/>
         <gotoRelatedProvider implementation="com.intellij.struts2.gotosymbol.GotoRelatedActionProvider"/>
 

@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType // Add this import
+
 plugins {
     id("java")
     id("org.jetbrains.intellij.platform") version "2.7.0"
@@ -36,8 +38,11 @@ dependencies {
 
         pluginVerifier()
         zipSigner()
-        instrumentationTools()
+        testFramework(TestFrameworkType.Plugin.Java)
     }
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:1.9.23")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+    testImplementation("com.jetbrains.intellij.platform:test-framework:251.27812.49") // 请根据实际IDEA版本调整
 }
 
 intellijPlatform {
