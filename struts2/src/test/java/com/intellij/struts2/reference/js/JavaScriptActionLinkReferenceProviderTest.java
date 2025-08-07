@@ -67,8 +67,8 @@ public class JavaScriptActionLinkReferenceProviderTest extends BasicLightHighlig
     myFixture.configureByText("test.js", 
       "var url = '/common/processCodeInputContinue.do';");
     
-    // Find references in the file
-    final PsiReference[] references = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+    // Find reference in the file (returns single PsiReference, not array)
+    final PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
     // Note: This test verifies the provider is registered and can process JavaScript files
   }
 
@@ -82,8 +82,8 @@ public class JavaScriptActionLinkReferenceProviderTest extends BasicLightHighlig
     myFixture.configureByText("test.js", 
       "var url = '/test/testAction.action';");
     
-    // Find references in the file
-    final PsiReference[] references = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
+    // Find reference in the file (returns single PsiReference, not array)
+    final PsiReference reference = myFixture.getFile().findReferenceAt(myFixture.getCaretOffset());
     // Note: This test verifies the provider can handle .action extensions
   }
 

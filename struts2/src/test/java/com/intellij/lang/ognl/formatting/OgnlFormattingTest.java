@@ -19,14 +19,14 @@ import com.intellij.lang.ognl.OgnlFileType;
 import com.intellij.lang.ognl.OgnlTestUtils;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.psi.codeStyle.CodeStyleManager;
-import com.intellij.testFramework.fixtures.BasePlatformTestCase;
+import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase;
 
 /**
  * Tests for {@link OgnlFormattingModelBuilder}.
  *
  * @author Yann C&eacute;bron
  */
-public class OgnlFormattingTest extends BasePlatformTestCase {
+public class OgnlFormattingTest extends LightJavaCodeInsightFixtureTestCase {
 
   public void testComma() {
     doTest("{1 ,2}",

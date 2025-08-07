@@ -1,4 +1,4 @@
-import org.jetbrains.intellij.platform.gradle.TestFrameworkType // Add this import
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
     id("java")
@@ -16,8 +16,13 @@ repositories {
     }
 }
 
-java.sourceSets["main"].java {
-    srcDir("src/main/gen")
+// 配置源码集
+sourceSets {
+    main {
+        java {
+            srcDir("src/main/gen")
+        }
+    }
 }
 
 dependencies {
@@ -40,9 +45,15 @@ dependencies {
         zipSigner()
         testFramework(TestFrameworkType.Plugin.Java)
     }
+
+    // 测试依赖 - 支持JUnit 4和JUnit 5
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:1.9.23")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
-    testImplementation("com.jetbrains.intellij.platform:test-framework:251.27812.49") // 请根据实际IDEA版本调整
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.hamcrest:hamcrest:2.2")
+    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.10.2")
+    testImplementation("com.jetbrains.intellij.platform:test-framework:251.26927.53") // 请根据实际IDEA版本调整
+
 }
 
 intellijPlatform {
@@ -64,16 +75,27 @@ intellijPlatform {
     }
 }
 
+// Java版本配置
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+// 任务配置
 tasks {
     withType<JavaCompile> {
         sourceCompatibility = "17"
         targetCompatibility = "17"
+        options.encoding = "UTF-8"
     }
+
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions.jvmTarget = "17"
     }
-}
 
-tasks.buildSearchableOptions {
-    enabled = false
+    buildSearchableOptions {
+        enabled = false
+    }
+
+    // 优化测试任务
 }

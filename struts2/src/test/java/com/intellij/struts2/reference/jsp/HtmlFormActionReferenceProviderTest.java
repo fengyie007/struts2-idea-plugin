@@ -17,7 +17,7 @@ package com.intellij.struts2.reference.jsp;
 
 import com.intellij.psi.PsiReference;
 import com.intellij.struts2.BasicLightHighlightingTestCase;
-import com.intellij.testFramework.fixtures.CodeInsightTestUtil;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Tests for {@link HtmlFormActionReferenceProvider}.
@@ -29,6 +29,12 @@ public class HtmlFormActionReferenceProviderTest extends BasicLightHighlightingT
   @Override
   protected String getTestDataPath() {
     return super.getTestDataPath() + "/reference/jsp/htmlform/";
+  }
+
+  @Override
+  @NotNull
+  protected String getTestDataLocation() {
+    return getTestDataPath();
   }
 
   /**
@@ -58,7 +64,11 @@ public class HtmlFormActionReferenceProviderTest extends BasicLightHighlightingT
     
     myFixture.configureByFiles("htmlform-action-completion.jsp", "struts-htmlform.xml");
     
-    CodeInsightTestUtil.doCompletionTest(myFixture, "processCodeInputContinue.do", 1);
+    // 使用兼容的完成测试方法
+    myFixture.completeBasic();
+    final java.util.List<String> lookupStrings = myFixture.getLookupElementStrings();
+    assertNotNull("Completion results should not be null", lookupStrings);
+    assertContainsElements(lookupStrings, "processCodeInputContinue.do");
   }
 
   /**
