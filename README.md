@@ -1,4 +1,4 @@
-# Struts 2
+# Struts2 Idea Plugin
 
 本插件 fork 自 [intellij-obsolete-plugins](https://github.com/beansoft/intellij-obsolete-plugins.git )仓库。
 <a href="https://plugins.jetbrains.com/organizations/BeanSoft">BeanSoft所有插件</a>。
