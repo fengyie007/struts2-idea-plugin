@@ -35,7 +35,6 @@ import com.intellij.struts2.dom.struts.model.StrutsModel;
 import com.intellij.struts2.dom.validator.ValidatorManager;
 import com.intellij.struts2.facet.StrutsFacet;
 import com.intellij.util.NotNullFunction;
-import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.xml.DomElement;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
@@ -52,6 +51,8 @@ import java.util.*;
  * @author Yann C&eacute;bron
  */
 public abstract class ActionAnnotatorBase extends RelatedItemLineMarkerProvider {
+  // Map to store path to result name mapping
+  private static final Map<String, String> pathToResultNameMap = new HashMap<>();
   private static DomElementListCellRenderer<Action> getActionRenderer() {
     return new DomElementListCellRenderer<>(StrutsBundle.message("annotators.action.no.name")) {
       @Override
@@ -59,6 +60,28 @@ public abstract class ActionAnnotatorBase extends RelatedItemLineMarkerProvider 
       @NonNls
       public String getAdditionalLocation(final Action action) {
         return action != null ? "[" + action.getNamespace() + "] " : "";
+      }
+    };
+  }
+
+  // Custom cell renderer for results that shows "resultName -> fileName"
+  private static com.intellij.ide.util.PsiElementListCellRenderer<PsiElement> getResultCellRenderer() {
+    return new com.intellij.ide.util.PsiElementListCellRenderer<PsiElement>() {
+      @Override
+      public String getElementText(PsiElement element) {
+        // Get the file path and try to find the result name
+        String filePath = element.getContainingFile().getVirtualFile().getPath();
+        for (Map.Entry<String, String> entry : pathToResultNameMap.entrySet()) {
+          if (filePath.endsWith(entry.getKey())) {
+            return entry.getValue() + " -> " + element.getContainingFile().getName();
+          }
+        }
+        return element.getContainingFile().getName();
+      }
+
+      @Override
+      protected String getContainerText(PsiElement element, String name) {
+        return " (" + element.getContainingFile().getVirtualFile().getParent().getPath() + ")";
       }
     };
   }
@@ -80,7 +103,7 @@ public abstract class ActionAnnotatorBase extends RelatedItemLineMarkerProvider 
 
         @Override
         public String getCustomName() {
-          return pathReference.getPath();
+          return "TEST -> " + pathReference.getPath();
         }
       }) : Collections.emptyList();
     };
@@ -190,7 +213,16 @@ public abstract class ActionAnnotatorBase extends RelatedItemLineMarkerProvider 
       final Set<PathReference> pathReferences = new HashSet<>();
       final List<Result> results = action.getResults();
       for (Result result : results) {
-        ContainerUtil.addIfNotNull(pathReferences, result.getValue());
+        PathReference pathReference = result.getValue();
+        if (pathReference != null) {
+          String resultName = result.getNameOrDefault();
+          if (resultName == null || resultName.trim().isEmpty()) {
+            resultName = Result.DEFAULT_NAME; // Use "success" as default
+          }
+          // Store the mapping from path to result name
+          pathToResultNameMap.put(pathReference.getPath(), resultName);
+          pathReferences.add(pathReference);
+        }
       }
 
       Set<PathReference> toStore = pathReferenceMap.computeIfAbsent(method, __ -> new HashSet<>());
@@ -205,7 +237,8 @@ public abstract class ActionAnnotatorBase extends RelatedItemLineMarkerProvider 
                                      .setAlignment(GutterIconRenderer.Alignment.LEFT)
                                      .setPopupTitle(StrutsBundle.message("annotators.action.goto.result"))
                                      .setTargets(entries.getValue())
-                                     .setTooltipTitle(StrutsBundle.message("annotators.action.goto.result.tooltip"));
+                                     .setTooltipTitle(StrutsBundle.message("annotators.action.goto.result.tooltip"))
+                                     .setCellRenderer(getResultCellRenderer());
 
       PsiMethod method = entries.getKey();
       PsiIdentifier identifier = method.getNameIdentifier();
