@@ -125,10 +125,11 @@ final class ActionImplUtil {
         continue;
       }
 
-      // return type "java.lang.String" or "com.opensymphony.xwork2.Result"
+      // return type "java.lang.String", "com.opensymphony.xwork2.Result", or "void"
       final PsiType type = psiMethod.getReturnType();
       if (type instanceof PsiClassType &&
-          (type.equals(stringType) || type.equals(resultType))) {
+          (type.equals(stringType) || type.equals(resultType)) ||
+          PsiTypes.voidType().equals(type)) {
 
         // stop on first hit when searching for name
         if (searchForMethod) {
