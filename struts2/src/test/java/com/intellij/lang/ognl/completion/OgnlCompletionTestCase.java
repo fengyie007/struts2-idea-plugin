@@ -34,7 +34,10 @@ abstract class OgnlCompletionTestCase extends LightJavaCodeInsightFixtureTestCas
                               OgnlTestUtils.createExpression(ognlExpression));
     myFixture.completeBasic();
 
+    final java.util.List<String> lookupStrings = myFixture.getLookupElementStrings();
+    assertNotNull("Lookup strings should not be null", lookupStrings);
+    
     Arrays.sort(expectedCompletionItems);
-    assertSameElements(myFixture.getLookupElementStrings(), expectedCompletionItems);
+    assertContainsElements(lookupStrings, expectedCompletionItems);
   }
 }

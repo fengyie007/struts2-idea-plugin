@@ -19,7 +19,7 @@ import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase;
 
 /**
  * OGNL表达式完成测试 - 使用兼容的API
- *
+ * 
  * 注意：部分复杂的完成测试由于API兼容性问题暂时简化
  * 保留核心的文件类型和基础功能测试
  */
@@ -50,7 +50,7 @@ public class OgnlFqnTypeExpressionCompletionTest extends LightJavaCodeInsightFix
   // TODO: 恢复完整的代码完成测试当API兼容性问题解决后
   // 原始测试方法:
   // - testNewExpressionBasicCompletion
-  // - testNewExpressionClassNameCompletion
+  // - testNewExpressionClassNameCompletion  
   // - testJavaLangClassesAreSuggested
   // - testMapTypeExpressionLimitsToMapClasses
   // - testNewArrayExpressionBasicCompletion

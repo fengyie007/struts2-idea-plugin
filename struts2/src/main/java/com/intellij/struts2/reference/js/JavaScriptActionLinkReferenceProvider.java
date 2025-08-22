@@ -92,7 +92,28 @@ public class JavaScriptActionLinkReferenceProvider extends PsiReferenceProvider 
     }
 
     // Calculate the text range within the string literal
-    final int startOffset = literalValue.indexOf(actionUrl);
+    // Look for the action URL pattern in the original literal value
+    int startOffset = -1;
+    for (final String extension : actionExtensions) {
+      final String escapedExtension = Pattern.quote(extension);
+      // First try to find JSP expression pattern
+      final Pattern jspPattern = Pattern.compile("(\\$\\{[^}]+\\})?(/[^'\"]*" + escapedExtension + ")");
+      final Matcher jspMatcher = jspPattern.matcher(literalValue);
+      if (jspMatcher.find() && jspMatcher.group(2).equals(actionUrl)) {
+        // Found JSP pattern, use the start of the path part (group 2)
+        startOffset = jspMatcher.start(2);
+        break;
+      }
+      
+      // Fallback to original pattern
+      final Pattern fallbackPattern = Pattern.compile("([^'\"]*" + escapedExtension + ")");
+      final Matcher fallbackMatcher = fallbackPattern.matcher(literalValue);
+      if (fallbackMatcher.find() && fallbackMatcher.group(1).equals(actionUrl)) {
+        startOffset = fallbackMatcher.start(1);
+        break;
+      }
+    }
+    
     if (startOffset == -1) {
       return PsiReference.EMPTY_ARRAY;
     }
@@ -106,6 +127,7 @@ public class JavaScriptActionLinkReferenceProvider extends PsiReferenceProvider 
 
   /**
    * Finds action URL with any configured extension in the given string.
+   * Handles JSP expressions like ${ctx}/path/action.do by extracting the path part.
    * @param literalValue the string literal value to search in
    * @param actionExtensions list of configured action extensions
    * @return the action URL if found, null otherwise
@@ -113,12 +135,20 @@ public class JavaScriptActionLinkReferenceProvider extends PsiReferenceProvider 
   @Nullable
   private static String findActionUrlInString(@NotNull final String literalValue, @NotNull final List<String> actionExtensions) {
     for (final String extension : actionExtensions) {
-      // Create a pattern for this specific extension
+      // Create a pattern for this specific extension that handles JSP expressions
       final String escapedExtension = Pattern.quote(extension);
-      final Pattern pattern = Pattern.compile("([^'\"]*" + escapedExtension + ")(?:\\\\?.*)?(?:['\"].*)?$");
+      // Pattern to match URLs like ${ctx}/path/action.do or /path/action.do
+      final Pattern pattern = Pattern.compile("(?:\\$\\{[^}]+\\})?(/[^'\"]*" + escapedExtension + ")(?:\\\\?.*)?");
       final Matcher matcher = pattern.matcher(literalValue);
       if (matcher.find()) {
-        return matcher.group(1);
+        return matcher.group(1); // Return the /path/action.do part without JSP expression prefix
+      }
+      
+      // Fallback to original pattern for URLs without JSP expressions
+      final Pattern fallbackPattern = Pattern.compile("([^'\"]*" + escapedExtension + ")(?:\\\\?.*)?(?:['\"].*)?$");
+      final Matcher fallbackMatcher = fallbackPattern.matcher(literalValue);
+      if (fallbackMatcher.find()) {
+        return fallbackMatcher.group(1);
       }
     }
     return null;

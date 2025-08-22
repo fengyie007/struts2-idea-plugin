@@ -93,6 +93,8 @@
                                   implementation="com.intellij.struts2.reference.HtmlFormReferenceContributor"/>
         <psi.referenceContributor language="JavaScript"
                                   implementation="com.intellij.struts2.reference.js.JavaScriptStrutsReferenceContributor"/>
+        <psi.referenceContributor language="JavaScript"
+                                  implementation="com.intellij.struts2.reference.jsp.JspJavaScriptReferenceContributor"/>
 
         <iconProvider implementation="com.intellij.struts2.Struts2IconProvider"/>
         <problemFileHighlightFilter implementation="com.intellij.struts2.Struts2ProblemFileHighlightFilter"/>

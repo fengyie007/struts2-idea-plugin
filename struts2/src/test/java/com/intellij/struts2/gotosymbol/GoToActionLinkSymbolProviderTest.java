@@ -17,6 +17,7 @@ package com.intellij.struts2.gotosymbol;
 
 import com.intellij.openapi.module.Module;
 import com.intellij.struts2.BasicLightHighlightingTestCase;
+import com.intellij.testFramework.fixtures.JavaCodeInsightTestFixture;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
@@ -33,7 +34,6 @@ public class GoToActionLinkSymbolProviderTest extends BasicLightHighlightingTest
   }
 
   @Override
-  @NotNull
   protected String getTestDataLocation() {
     return getTestDataPath();
   }
@@ -50,6 +50,11 @@ public class GoToActionLinkSymbolProviderTest extends BasicLightHighlightingTest
     // Should find action links with .do extension
     assertContainsElements(names, "/testNamespace/testAction.do");
     assertContainsElements(names, "rootAction.do");
+  }
+
+  @NotNull
+  protected String getTestDataBasePath() {
+    return "/contrib/struts2/plugin/src/test/testData";
   }
 
 }

@@ -16,7 +16,6 @@ repositories {
     }
 }
 
-// 配置源码集
 sourceSets {
     main {
         java {
@@ -52,8 +51,10 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.hamcrest:hamcrest:2.2")
     testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.10.2")
-    testImplementation("com.jetbrains.intellij.platform:test-framework:251.26927.53") // 请根据实际IDEA版本调整
 
+    // IntelliJ Platform 测试框架 - 提供额外的测试API
+    // 这个依赖提供了某些测试用例需要的特殊API，如 addSuppressedException 等
+    testImplementation("com.jetbrains.intellij.platform:test-framework:251.26927.53")
 }
 
 intellijPlatform {
@@ -75,13 +76,11 @@ intellijPlatform {
     }
 }
 
-// Java版本配置
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-// 任务配置
 tasks {
     withType<JavaCompile> {
         sourceCompatibility = "17"
@@ -96,6 +95,4 @@ tasks {
     buildSearchableOptions {
         enabled = false
     }
-
-    // 优化测试任务
 }
